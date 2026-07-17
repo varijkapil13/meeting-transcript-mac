@@ -87,7 +87,7 @@ private struct GeneralSettingsPane: View {
     @ObservedObject var audioManager: AudioSessionManager
     @ObservedObject private var vault: VaultCoordinator = .shared
 
-    @AppStorage("selectedMicrophoneID") var selectedMicID: String = "auto"
+    @AppStorage("selectedMicrophoneID") var selectedMicID: String = ""
     @AppStorage("captureSystemAudio") var captureSystemAudio: Bool = true
     @AppStorage("selectedLanguage") var selectedLanguage: String = "auto"
     @AppStorage(NotesDirectory.userPreferenceKey) var notesVaultPath: String = ""

@@ -137,23 +137,26 @@ final class AppState: ObservableObject {
     }
 
     private func applyStoredMicrophoneDevice() {
-        // Absent preference defaults to automatic — follow the mic actually in
-        // use (e.g. the one a Teams call opened), not the system default.
-        let stored = UserDefaults.standard.string(forKey: "selectedMicrophoneID") ?? "auto"
+        // Absent preference defaults to the system default input — the device
+        // the OS (and the user) selected, which reliably carries their voice.
+        // Automatic ("follow the mic a call app is using") is opt-in: it keys
+        // off "device running somewhere", which virtual/loopback inputs like
+        // "Microsoft Teams Audio" trip, silently capturing a dead device.
+        let stored = UserDefaults.standard.string(forKey: "selectedMicrophoneID") ?? ""
         audioManager.setMicSelection(Self.micSelection(from: stored))
     }
 
     /// Maps the string-encoded `selectedMicrophoneID` UserDefault to a mic
     /// selection: `"auto"` → automatic (mic in use by a call app), `""` →
     /// system default, a numeric ID → that pinned device. Anything unparseable
-    /// falls back to automatic.
+    /// falls back to the system default.
     private static func micSelection(from stored: String) -> AudioSessionManager.MicSelection {
         switch stored {
         case "auto": return .automatic
         case "": return .systemDefault
         default:
             if let id = AudioDeviceID(stored) { return .device(id) }
-            return .automatic
+            return .systemDefault
         }
     }
 

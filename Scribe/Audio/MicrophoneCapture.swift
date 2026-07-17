@@ -402,14 +402,41 @@ final class MicrophoneCapture: @unchecked Sendable {
         return sorted.first(where: { $0 != def }) ?? sorted.first
     }
 
-    /// The set of input devices CoreAudio reports as currently running
-    /// somewhere on the system (in use by any process, including us).
+    /// The set of *physical* input devices CoreAudio reports as currently
+    /// running somewhere on the system (in use by any process, including us).
+    /// Virtual/loopback and aggregate devices are excluded: call apps install
+    /// virtual inputs (e.g. "Microsoft Teams Audio") that report as running but
+    /// deliver silence, so following one would silently kill capture.
     func runningInputDeviceIDs() -> Set<AudioDeviceID> {
         var running = Set<AudioDeviceID>()
-        for device in availableInputDevices() where Self.isDeviceRunningSomewhere(device.id) {
+        for device in availableInputDevices()
+        where Self.isDeviceRunningSomewhere(device.id) && Self.isPhysicalInputDevice(device.id) {
             running.insert(device.id)
         }
         return running
+    }
+
+    /// Whether a device is a real, physical capture source (built-in, USB,
+    /// Bluetooth, …) rather than a virtual/loopback or aggregate device. Used to
+    /// keep auto-detection from "following" a running-but-silent virtual input.
+    private static func isPhysicalInputDevice(_ deviceID: AudioDeviceID) -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyTransportType,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var transport: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &transport)
+        guard status == noErr else { return false }
+        switch transport {
+        case kAudioDeviceTransportTypeVirtual,
+             kAudioDeviceTransportTypeAggregate,
+             kAudioDeviceTransportTypeAutoAggregate:
+            return false
+        default:
+            return true
+        }
     }
 
     /// Whether a specific device's IO is running anywhere on the system.

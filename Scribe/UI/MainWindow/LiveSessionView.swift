@@ -18,7 +18,7 @@ struct LiveSessionView: View {
     @EnvironmentObject var appDelegate: AppDelegate
 
     @AppStorage("captureSystemAudio") private var captureSystemAudio: Bool = true
-    @AppStorage("selectedMicrophoneID") private var selectedMicrophoneID: String = "auto"
+    @AppStorage("selectedMicrophoneID") private var selectedMicrophoneID: String = ""
     @AppStorage("selectedLanguage") private var selectedLanguage: String = "auto"
 
     /// Drives `.sensoryFeedback` so start/stop/pause confirm with a haptic.
